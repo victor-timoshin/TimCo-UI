@@ -1,17 +1,26 @@
-﻿using System.Web.Mvc;
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Reflection;
+using System.Web.Mvc;
+using System.Web.Mvc.Html;
 using TimCo_UI.Components.Hyperlink;
 
 namespace TimCo_UI
 {
 	public static class HTMLExtensions
 	{
+		#region ActionLink
+
 		/// <summary>
 		/// 
 		/// </summary>
 		/// <param name="helper"></param>
-		/// <param name="linkText"></param>
-		/// <param name="actionName"></param>
-		/// <param name="controllerName"></param>
+		/// <param name="linkText">Текст гиперссылки.</param>
+		/// <param name="actionName">Название серверного Action метода контроллера, куда поступит запрос на обработку.</param>
+		/// <param name="controllerName">Название контроллера, куда поступит запрос в поисках Action метода для обработки.</param>
 		/// <param name="routeValues"></param>
 		/// <param name="htmlAttributes"></param>
 		/// <returns></returns>
@@ -36,7 +45,7 @@ namespace TimCo_UI
 		/// 
 		/// </summary>
 		/// <param name="ajaxHelper">Класс, предоставляющий поддержку отображения HTML в AJAX сценариях.</param>
-		/// <param name="linkText">Текст ссылки.</param>
+		/// <param name="linkText">Текст гиперссылки.</param>
 		/// <param name="actionName">Название серверного Action метода контроллера, куда поступит запрос на обработку.</param>
 		/// <param name="controllerName">Название контроллера, куда поступит запрос в поисках Action метода для обработки.</param>
 		/// <param name="routeValues"></param>
@@ -59,5 +68,87 @@ namespace TimCo_UI
 
 			return new HyperlinkBuilder(link);
 		}
+
+		#endregion
+
+		#region DropDownList
+
+		private static readonly SelectListItem[] _singleEmptyItem = new[] { new SelectListItem { Text = "", Value = "" } };
+
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="modelMetadata"></param>
+		/// <returns></returns>
+		private static Type GetNonNullableModelType(ModelMetadata modelMetadata)
+		{
+			Type realModelType = modelMetadata.ModelType;
+			Type underlyingType = Nullable.GetUnderlyingType(realModelType);
+
+			if (underlyingType != null)
+				realModelType = underlyingType;
+
+			return realModelType;
+		}
+
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <typeparam name="TEnum"></typeparam>
+		/// <param name="value"></param>
+		/// <returns></returns>
+		public static string GetEnumDescription<TEnum>(TEnum value)
+		{
+			FieldInfo fieldInfo = value.GetType().GetField(value.ToString());
+			DescriptionAttribute[] attributes = (DescriptionAttribute[])fieldInfo.GetCustomAttributes(typeof(DescriptionAttribute), false);
+
+			if ((attributes != null) && (attributes.Length > 0))
+				return attributes[0].Description;
+			else
+				return value.ToString();
+		}
+		
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <typeparam name="TModel"></typeparam>
+		/// <typeparam name="TEnum"></typeparam>
+		/// <param name="htmlHelper"></param>
+		/// <param name="expression"></param>
+		/// <param name="htmlAttributes"></param>
+		/// <returns></returns>
+		public static MvcHtmlString EnumDropDownListForEx<TModel, TEnum>(this HtmlHelper<TModel> htmlHelper, Expression<Func<TModel, TEnum>> expression, object htmlAttributes)
+		{
+			ModelMetadata metadata = ModelMetadata.FromLambdaExpression(expression, htmlHelper.ViewData);
+			Type enumType = GetNonNullableModelType(metadata);
+			IEnumerable<TEnum> values = Enum.GetValues(enumType).Cast<TEnum>();
+
+			IEnumerable<SelectListItem> items = from value in values select new SelectListItem
+			{
+				Text = GetEnumDescription(value),
+				Value = value.ToString(),
+				Selected = value.Equals(metadata.Model)
+			};
+
+			if (metadata.IsNullableValueType)
+				items = _singleEmptyItem.Concat(items);
+
+			return htmlHelper.DropDownListFor(expression, items, htmlAttributes);
+		}
+
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <typeparam name="TModel"></typeparam>
+		/// <typeparam name="TEnum"></typeparam>
+		/// <param name="htmlHelper"></param>
+		/// <param name="expression"></param>
+		/// <returns></returns>
+		public static MvcHtmlString EnumDropDownListForEx<TModel, TEnum>(this HtmlHelper<TModel> htmlHelper, Expression<Func<TModel, TEnum>> expression)
+		{
+			return EnumDropDownListForEx(htmlHelper, expression, null);
+		}
+
+		#endregion
 	}
 }

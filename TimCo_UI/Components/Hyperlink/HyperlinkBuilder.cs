@@ -23,7 +23,7 @@ namespace TimCo_UI.Components.Hyperlink
 		/// <summary>
 		/// 
 		/// </summary>
-		/// <param name="linkText">Текст ссылки.</param>
+		/// <param name="linkText">Текст гиперссылки.</param>
 		/// <returns></returns>
 		public HyperlinkBuilder SetLinkText(string linkText)
 		{
