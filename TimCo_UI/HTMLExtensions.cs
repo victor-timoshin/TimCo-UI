@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Web.Mvc;
 using System.Web.Mvc.Html;
 using TimCo_UI.Components.Hyperlink;
+using TimCo_UI.Components.Table;
 
 namespace TimCo_UI
 {
@@ -147,6 +148,26 @@ namespace TimCo_UI
 		public static MvcHtmlString EnumDropDownListForEx<TModel, TEnum>(this HtmlHelper<TModel> htmlHelper, Expression<Func<TModel, TEnum>> expression)
 		{
 			return EnumDropDownListForEx(htmlHelper, expression, null);
+		}
+
+		#endregion
+
+		#region Table
+
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <param name="helper"></param>
+		/// <param name="dataSource"></param>
+		/// <returns></returns>
+		public static TableBuilder<T> TableEx<T>(this HtmlHelper helper, IEnumerable<T> dataSource)
+			where T : class
+		{
+			var table = new Table<T>(dataSource);
+			table.Orientation = OrientationTypes.Horizontal;
+			table.IsPageable = false;
+			return new TableBuilder<T>(table);
 		}
 
 		#endregion
